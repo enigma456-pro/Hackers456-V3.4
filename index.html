@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advertencia</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body, html {
+            width: 100%;
+            height: 100%;
+            background-color: #0b0b0b;
+            color: #ff3333;
+            font-family: 'Courier New', Courier, monospace;
+            overflow: hidden;
+        }
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: #0b0b0b;
+            z-index: 10;
+            padding: 20px;
+            text-align: center;
+            overflow: hidden;
+        }
+        .screen.active {
+            display: flex;
+        }
+        #welcome-screen {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #000;
+            z-index: 100;
+        }
+        .btn-enter {
+            background-color: #ff0000;
+            color: #ffffff;
+            border: none;
+            padding: 18px 40px;
+            font-size: 24px;
+            font-weight: bold;
+            font-family: 'Courier New', Courier, monospace;
+            cursor: pointer;
+            border-radius: 5px;
+            box-shadow: 0 0 15px rgba(255, 0, 0, 0.6);
+            transition: background 0.2s;
+            z-index: 200;
+            position: relative;
+        }
+        .btn-enter:hover {
+            background-color: #cc0000;
+        }
+        .warning-text {
+            font-size: 2.5rem;
+            font-weight: bold;
+            text-shadow: 0 0 10px rgba(255, 0, 0, 0.8);
+            letter-spacing: 2px;
+            line-height: 1.4;
+            max-width: 90%;
+            z-index: 20;
+            position: relative;
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 20px 40px;
+            border-radius: 10px;
+            border: 2px solid rgba(255, 0, 0, 0.3);
+        }
+        
+        /* Estilo para la animación de código - fondo ÚNICO para TODAS las pantallas */
+        .code-rain {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+            overflow: hidden;
+            background-color: #0b0b0b;
+        }
+        
+        .code-line {
+            position: absolute;
+            white-space: nowrap;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            font-weight: bold;
+            animation: moveRightToLeft 8s linear infinite;
+            opacity: 0.8;
+            text-shadow: 0 0 10px currentColor;
+        }
+        
+        @keyframes moveRightToLeft {
+            0% {
+                transform: translateX(100vw);
+                opacity: 0;
+            }
+            5% {
+                opacity: 0.8;
+            }
+            90% {
+                opacity: 0.8;
+            }
+            100% {
+                transform: translateX(-100%);
+                opacity: 0;
+            }
+        }
+        
+        /* Diferentes velocidades para las líneas */
+        .code-line:nth-child(odd) {
+            animation-duration: 6s;
+        }
+        .code-line:nth-child(3n) {
+            animation-duration: 10s;
+        }
+        .code-line:nth-child(5n) {
+            animation-duration: 7s;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Pantalla de Bienvenida con Botón Entrar -->
+    <div id="welcome-screen" class="screen active">
+        <button id="btn-entrar" class="btn-enter" onclick="iniciarExperiencia()">ENTRAR</button>
+    </div>
+
+    <!-- Fondo ÚNICO de animación para TODAS las pantallas de advertencia -->
+    <div id="code-rain-background" class="code-rain" style="display: none;"></div>
+
+    <!-- Contenedor donde se inyectarán las 50 pantallas -->
+    <div id="screens-container"></div>
+
+    <script>
+        const totalScreens = 50;
+        let currentScreen = 0;
+
+        function getMessage(num) {
+            if (num >= 40 && num <= 50) {
+                return "Estás siendo jaqueado.";
+            } else if (num >= 30 && num <= 39) {
+                return "no intentes nada, muy pronto terminara.";
+            } else if (num >= 20 && num <= 29) {
+                return "no te alteres.";
+            } else if (num >= 5 && num <= 19) {
+                return "ya falta poco.";
+            } else if (num >= 1 && num <= 4) {
+                return "listo.";
+            }
+            return "";
+        }
+
+        // Generar código aleatorio para la animación
+        function generateRandomCode() {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+-=[]{}|;:,.<>?/';
+            let code = '';
+            const length = Math.floor(Math.random() * 30) + 15;
+            for (let i = 0; i < length; i++) {
+                code += chars[Math.floor(Math.random() * chars.length)];
+            }
+            return code;
+        }
+
+        // Generar colores aleatorios (verde y variantes)
+        function getRandomColor() {
+            const colors = [
+                '#00ff00', '#33ff33', '#66ff66', '#99ff99', '#ccffcc',
+                '#00cc00', '#00ff44', '#44ff00', '#00ff88', '#88ff00',
+                '#ff00ff', '#ff6600', '#ffcc00', '#00ccff', '#ff0066',
+                '#66ffcc', '#cc66ff', '#ffcc66', '#66ccff', '#ff66cc'
+            ];
+            return colors[Math.floor(Math.random() * colors.length)];
+        }
+
+        // Crear el fondo ÚNICO de animación de lluvia de código
+        function createCodeRain() {
+            const rainContainer = document.getElementById('code-rain-background');
+            
+            // Crear líneas de código
+            const numLines = 35 + Math.floor(Math.random() * 20);
+            for (let i = 0; i < numLines; i++) {
+                const line = document.createElement('div');
+                line.className = 'code-line';
+                line.textContent = generateRandomCode();
+                line.style.color = getRandomColor();
+                line.style.top = Math.random() * 100 + '%';
+                line.style.fontSize = (12 + Math.random() * 10) + 'px';
+                line.style.animationDelay = (Math.random() * 8) + 's';
+                line.style.opacity = 0.5 + Math.random() * 0.5;
+                
+                // Añadir efecto de brillo
+                line.style.filter = 'blur(' + (Math.random() * 2) + 'px)';
+                
+                rainContainer.appendChild(line);
+            }
+        }
+
+        // Crear dinámicamente las 50 pantallas al cargar la página
+        const container = document.getElementById('screens-container');
+        for (let i = 50; i >= 1; i--) {
+            const div = document.createElement('div');
+            div.className = 'screen';
+            div.id = 'screen-' + i;
+            
+            const textDiv = document.createElement('div');
+            textDiv.className = 'warning-text';
+            textDiv.innerText = getMessage(i);
+            
+            div.appendChild(textDiv);
+            container.appendChild(div);
+        }
+
+        // Crear el fondo de animación ÚNICO (se muestra cuando se hace clic en ENTRAR)
+        createCodeRain();
+
+        function iniciarExperiencia() {
+            // 1. Ocultar y eliminar el botón de bienvenida
+            const welcome = document.getElementById('welcome-screen');
+            if (welcome) {
+                welcome.remove();
+            }
+
+            // 2. Mostrar el fondo de animación
+            document.getElementById('code-rain-background').style.display = 'block';
+
+            // 3. Configurar el historial
+            history.replaceState({ screen: 0 }, "", "");
+            
+            for (let i = 1; i <= 50; i++) {
+                history.pushState({ screen: i }, "", "");
+            }
+
+            currentScreen = 50;
+            actualizarVisualizacion();
+        }
+
+        // Manejar el evento de retroceso
+        window.addEventListener('popstate', function(event) {
+            if (event.state && typeof event.state.screen !== 'undefined') {
+                currentScreen = event.state.screen;
+                actualizarVisualizacion();
+            }
+        });
+
+        function actualizarVisualizacion() {
+            // Ocultar todas las pantallas de advertencia
+            for (let i = 1; i <= totalScreens; i++) {
+                const s = document.getElementById('screen-' + i);
+                if (s) {
+                    s.classList.remove('active');
+                }
+            }
+
+            // Mostrar la pantalla correspondiente si está entre 1 y 50
+            if (currentScreen >= 1 && currentScreen <= 50) {
+                const targetScreen = document.getElementById('screen-' + currentScreen);
+                if (targetScreen) {
+                    targetScreen.classList.add('active');
+                }
+            }
+        }
+    </script>
+</body>
+</html>
